@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Угадай перевод</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            margin-top: 20px;
+        }
+        .username {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 18px;
+        }
+        .word-container {
+            margin-top: 50px;
+        }
+        .word {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+        .microphone-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 24px;
+            color: #007bff;
+        }
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .buttons button {
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        .result {
+            margin-top: 20px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .correct {
+            color: green;
+        }
+        .incorrect {
+            color: red;
+        }
+        .progress {
+            margin-top: 20px;
+            font-size: 20px;
+        }
+        .progress-bar {
+            width: 50%;
+            height: 20px;
+            background-color: #f3f3f3;
+            margin: 10px auto;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background-color: #76c7c0;
+            transition: width 0.3s ease;
+        }
+        .celebration-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .celebration-message {
+            font-size: 48px;
+            font-weight: bold;
+            color: white;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>Угадай перевод</h1>
+    <div class="username">
+        Пользователь: {{ username }}
+    </div>
+
+    <div class="word-container">
+        <div class="word">
+            {{ random_word }}
+            <!-- Кнопка микрофончика -->
+            <button class="microphone-button" id="play-button">🎤</button>
+        </div>
+        <!-- Элемент для воспроизведения аудио -->
+        <audio id="word-audio" controls style="display: none;">
+            <source id="audio-source" src="" type="audio/mpeg">
+            Ваш браузер не поддерживает аудио.
+        </audio>
+        <form method="POST" action="{{ url_for('check_answer') }}">
+            <div class="buttons">
+                {% for translation in translations %}
+                    <button type="submit" name="translation" value="{{ translation }}">{{ translation }}</button>
+                {% endfor %}
+            </div>
+            <input type="hidden" name="word" value="{{ random_word }}">
+        </form>
+        {% if result %}
+            <div class="result {% if result.correct %}correct{% else %}incorrect{% endif %}">
+                {% if result.correct %}
+                    Верно, {{ result.word }} — это {{ result.correct_answer }}
+                {% else %}
+                    Неверно. {{ result.word }} — это {{ result.correct_answer }}. А {{ result.selected_translation }} — это {{ result.selected_word }}
+                {% endif %}
+            </div>
+        {% endif %}
+        <div class="progress">
+            Прогресс: {{ progress }} из {{ daily_goal }}
+        </div>
+        <div class="progress-bar">
+            <div class="progress-bar-fill" style="width: {{ progress_percentage }}%;"></div>
+        </div>
+    </div>
+
+    {% if celebration %}
+        <div class="celebration-overlay">
+            <div class="celebration-message">
+                ПОЗДРАВЛЯЮ!<br>Ежедневная цель выполнена!
+            </div>
+        </div>
+    {% endif %}
+
+    <script>
+        // Функция для воспроизведения аудио
+        function playAudio(word) {
+            const audioElement = document.getElementById('word-audio');
+            const audioSource = document.getElementById('audio-source');
+            // Указываем путь к аудиофайлу
+            const audioPath = "/audio/" + word + ".mp3";
+            audioSource.src = audioPath;
+            // Перезагружаем аудиоэлемент
+            audioElement.load();
+            // Воспроизводим аудио
+            audioElement.play().catch(error => {
+                console.error("Ошибка воспроизведения аудио:", error);
+            });
+        }
+
+        // Воспроизводим аудио при нажатии на кнопку микрофончика
+        const playButton = document.getElementById('play-button');
+        const randomWord = "{{ random_word }}";
+        if (randomWord) {
+            playButton.addEventListener('click', () => {
+                playAudio(randomWord);
+            });
+        }
+    </script>
+</body>
+</html>
